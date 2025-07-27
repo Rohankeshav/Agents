@@ -1,0 +1,173 @@
+{
+  "name": "Flight Price Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "40ba6b51-0889-40b2-9c70-2207d5ce9bd3",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        0
+      ],
+      "id": "7ed32fae-fe6c-4b78-ae8f-af034f92b86f",
+      "name": "Webhook",
+      "webhookId": "40ba6b51-0889-40b2-9c70-2207d5ce9bd3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a flight finder expert.\n\nYou will receive a list of flight records from fetchRecords as JSON input (the $json variable). Each record has a 'Price' field (per passenger), and the user input includes 'passengers'. For each record, calculate total price = Price × {{ $('Webhook').item.json.body.passengers }}.\n\nYour job:\n\n1. Check if there are matching flights in the records. \n2. If there are matching flights:\n   - Rank them based on the cheapest first.\n   - Include total price = Price × passengers.\n\nHere is the data: {{JSON.stringify($json)}}\n\nThe output format must be strictly a valid JSON array without any explanations, code blocks, or markdown formatting. **Do not include any text before or after. Do not wrap in ```json or any backticks. Only output raw JSON array.**\n\nFormat example for each record:\n{\n  \"From\": \"...\",\n  \"To\": \"...\",\n  \"Date\": \"...\",\n  \"Class\": \"...\",\n  \"Stops\": ...,\n  \"Price\": ...,\n  \"Airline\": \"...\"\n}\n\nOnly output the JSON array.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "2c657399-b1ff-4e31-ae64-b1dd0c0573a9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        120,
+        200
+      ],
+      "id": "3633d2fa-7dc8-4ecb-bc90-707f7fb869de",
+      "name": "4.1-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "94ZOjOipTQDPAMQ0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        580,
+        0
+      ],
+      "id": "114f0268-fca8-4165-88cf-794f63b3cc56",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appLXcNbZGl7IFq9c",
+          "mode": "list",
+          "cachedResultName": "flightsData",
+          "cachedResultUrl": "https://airtable.com/appLXcNbZGl7IFq9c"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsJzFAKnhFsvcaa",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appLXcNbZGl7IFq9c/tblsJzFAKnhFsvcaa"
+        },
+        "filterByFormula": "=AND(\n  {fromLocation} = '{{$json.body.fromLocation}}',\n  {toLocation} = '{{$json.body.toLocation}}',\n  IS_SAME({travelDate}, '{{$json.body.travelDate}}', 'day'),\n  {Price} >= {{$json.body.priceRange.min}},\n  {Price} <= {{$json.body.priceRange.max}},\n  {maxStops} <= {{$json.body.maxStops}}\n)\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        40,
+        0
+      ],
+      "id": "b802d84b-53ae-443e-b5ca-b885692dc47c",
+      "name": "fetchRecords",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "WEobk2cJNKdSP2dC",
+          "name": "Airtable Personal Access Token account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "fetchRecords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4.1-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "fetchRecords": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9cc604a9-d819-47b3-969e-f835329e2712",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ac0acf860476d0c217a10e275d66988edcdb1e0ddcff894fb510094ec704fd88"
+  },
+  "id": "tsgeaXHCkL4g4x75",
+  "tags": []
+}

@@ -1,0 +1,166 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agentic-flight-monitor",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        20
+      ],
+      "id": "3210d49c-4fd9-457b-8539-0156383f6a35",
+      "name": "Webhook",
+      "webhookId": "529cedd1-864c-4f05-932f-b5ec88efd3b1"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appLXcNbZGl7IFq9c",
+          "mode": "list",
+          "cachedResultName": "flightsData"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblsJzFAKnhFsvcaa",
+          "mode": "list",
+          "cachedResultName": "Table 1"
+        },
+        "filterByFormula": "=AND(\n  {fromLocation} = '{{$json.body.fromLocation}}',\n  {toLocation} = '{{$json.body.toLocation}}',\n  IS_SAME({travelDate}, '{{$json.body.travelDate}}', 'day'),\n  {Price} >= {{$json.body.priceRange.min}},\n  {Price} <= {{$json.body.priceRange.max}},\n  {maxStops} <= {{$json.body.maxStops}}\n)\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        20
+      ],
+      "id": "2c6569a4-5998-4b03-8f9e-8e64292257a0",
+      "name": "Fetch Flights",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "WEobk2cJNKdSP2dC",
+          "name": "Airtable Personal Access Token account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an intelligent flight booking agent.\n\nYou have access to these tools:\n1. fetchFlights — fetch flights from Airtable.\n2. suggestNearbyAirports — suggest alternate airports if no good options.\n3. suggestAlternateDates — suggest different dates if needed.\n\nWhen a user asks for flights, first use fetchFlights.\n\nIf no suitable flights are found or they are too expensive, consider suggesting nearby airports or alternative dates.\n\nFinally, provide a JSON array summarizing matching flights. Only output raw JSON array without any explanation or markdown formatting.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        360,
+        20
+      ],
+      "id": "189a38ea-3c85-4d42-a4a6-2d4ec535c44c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        20
+      ],
+      "id": "374a33e1-e86d-4051-a1c8-865f85d5e9c6",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        280,
+        220
+      ],
+      "id": "41abe095-f768-4e0f-a507-8a5f9d98c2ae",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "94ZOjOipTQDPAMQ0",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fetch Flights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Flights": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "682a4fc2-c09a-42f2-9b59-f4ef69c7abef",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ac0acf860476d0c217a10e275d66988edcdb1e0ddcff894fb510094ec704fd88"
+  },
+  "id": "SOBs9Vrh0Qrqdrh4",
+  "tags": []
+}

@@ -1,0 +1,494 @@
+{
+  "name": "mini -assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -540,
+        0
+      ],
+      "id": "e72d1364-da8e-46c9-b3f8-d8bc452661ca",
+      "name": "Watching inbox",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ED72saJoD87tzkP8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "simple": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "c7c75eef-e7d3-48b1-937a-72ddc775fc49",
+      "name": "getting details",
+      "webhookId": "f9f923c2-b4dc-438c-a377-26aaf406f2ff",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ED72saJoD87tzkP8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=To:\n {{ $json.headers.to }}\n\nSubject Line:\n{{ $json.headers.subject }}\n\nEmail Body :{{ $json.text }}\n\nEmail sent on :{{ $json.headers.date }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are a personal emailing assistant that categorizes and responds to emails based on the availability from a calendar tool and also a goals database to ensure the emails are being properly responded to and categorized.\n\nHere are the tools you have access to\n- search_events : This is used to search for google calendar events for the user and to check availability. This must be checked before drafting responses regarding events, meeting, calls, etc.\n\nToday's data is {{ $now }}\n\nWhen searching events use today's date and the date of when the email was sent to find the calendar availability based on those factors.\n\n- goals_database : This is used to search an airtable database and find the users goals. This should be checked to ensure the email responses you will be drafting in line with the user.\n\nYour jobs:\n1. Respond to the email always using the goals_database tool to ensure it aligns with the user. When responding to emails that require time availability, always check th ecalendar. Make these emails short, snappy and down to earth. Add one fitting emoji per email.\n\n2.Next, you must categorize which type of email this is by adding one of the following labels to each response:\n\nLabel 1: 'Spam'\nanything that seems spammy, sketchy or unnecessary based on my goals.\n\nLabel 2: 'Meeting'\nanything that requires me to be on a call, show up to an event etc.\n\nLabel 3: 'Check Later'\nanything outside the other two label categories.\n\nYou must respond in JSON object format.\nHere is the structure you need to categorize each part of your response in:\n\n{\n\t\"label\": \"label here\",\n    \"response\" : \"response here\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        0
+      ],
+      "id": "3a02f687-9b1e-4011-a608-efe3a33d9401",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -280,
+        260
+      ],
+      "id": "79f3a543-c6b9-47dd-bad0-0c5e2509c6b6",
+      "name": "4o-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "94ZOjOipTQDPAMQ0",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Searches for events in the Google calendar",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "rohankeshav1122@gmail.com",
+          "mode": "list",
+          "cachedResultName": "rohankeshav1122@gmail.com"
+        },
+        "timeMax": "={{ $now.plus({week :1}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        160,
+        260
+      ],
+      "id": "2701f3d5-74c4-4726-8cdf-2f0c777e6267",
+      "name": "search_events",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "XVIbBEHvz5TjFOlw",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Gets goals from airtable database by searching the records.",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appXnN1r6aFK15I3I",
+          "mode": "list",
+          "cachedResultName": "Goals Workspace",
+          "cachedResultUrl": "https://airtable.com/appXnN1r6aFK15I3I"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblgYUSdE0hlsZo6b",
+          "mode": "list",
+          "cachedResultName": "Goals",
+          "cachedResultUrl": "https://airtable.com/appXnN1r6aFK15I3I/tblgYUSdE0hlsZo6b"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        -120,
+        260
+      ],
+      "id": "7a9d1f6c-a4f7-4a7b-9819-74364c44de5e",
+      "name": "goals_database",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "2RPPw8Z4SyMwmvBC",
+          "name": "Airtable Personal Access Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"label\": \"Meeting\",\n    \"response\" : \"response\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        260
+      ],
+      "id": "2717021b-8d49-4e6b-986a-aa4ee9aaed30",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "Test",
+        "message": "={{ $json.output.response }}",
+        "options": {
+          "threadId": "={{ $('getting details').item.json.threadId }}",
+          "sendTo": "={{ $('getting details').item.json.from.value[0].address }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        260,
+        0
+      ],
+      "id": "e6413005-8276-4dbb-9682-7fdceb2a49cf",
+      "name": "creates draft",
+      "webhookId": "0f606a7f-dee6-4640-b3b9-1b25f11c8b8d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ED72saJoD87tzkP8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('AI Agent').item.json.output.label }}",
+                    "rightValue": "Spam",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6a2a2c83-a773-4360-82de-426c3238abbb"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Spam"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3321aa87-a09b-4f8b-a73a-f3b8563f17b8",
+                    "leftValue": "={{ $('AI Agent').item.json.output.label }}",
+                    "rightValue": "Meeting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Meeting"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0024384c-30cd-4c5e-a249-3d98ab6a2c19",
+                    "leftValue": "={{ $('AI Agent').item.json.output.label }}",
+                    "rightValue": "Work",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Work"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        480,
+        0
+      ],
+      "id": "7d0a71b9-3061-42c2-8369-9d80a7fcab22",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $('creates draft').item.json.message.threadId }}",
+        "labelIds": [
+          "SPAM"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        740,
+        -160
+      ],
+      "id": "725f5fc2-b336-4a43-9fde-667c3c1984f2",
+      "name": "spam",
+      "webhookId": "222eb9f7-b643-475e-8fda-54f5518db5a8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ED72saJoD87tzkP8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $('creates draft').item.json.message.threadId }}",
+        "labelIds": [
+          "Label_4"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        740,
+        0
+      ],
+      "id": "2c974d4c-00f2-48e4-829d-dcb1edfd6dff",
+      "name": "meeting",
+      "webhookId": "222eb9f7-b643-475e-8fda-54f5518db5a8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ED72saJoD87tzkP8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "addLabels",
+        "threadId": "={{ $('creates draft').item.json.message.threadId }}",
+        "labelIds": [
+          "Label_4"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        740,
+        180
+      ],
+      "id": "7b5db326-0889-42bb-a544-632ada9f59a0",
+      "name": "work",
+      "webhookId": "222eb9f7-b643-475e-8fda-54f5518db5a8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ED72saJoD87tzkP8",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Watching inbox": {
+      "main": [
+        [
+          {
+            "node": "getting details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getting details": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_events": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "goals_database": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "creates draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "creates draft": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "spam",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "meeting",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "work",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9bd1666a-ab48-42ff-8df9-31a32049c864",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ac0acf860476d0c217a10e275d66988edcdb1e0ddcff894fb510094ec704fd88"
+  },
+  "id": "vZtp5Jgfa5KTdfQJ",
+  "tags": []
+}
